@@ -169,7 +169,7 @@ def AdminLoginAction(request):
         username = request.POST.get('t1', False)
         password = request.POST.get('t2', False)
         index = 0
-        con = pymysql.connect(host='127.0.0.1',port = 3306,user = 'root', password = '1234', database = 'Liver',charset='utf8')
+        con = pymysql.connect(host='127.0.0.1',port = 3306,user = 'root', password = 'mypassword', database = 'liver',charset='utf8')
         with con:    
             cur = con.cursor()
             cur.execute("select * FROM account")
@@ -193,7 +193,7 @@ def UpdateProfileAction(request):
         username = request.POST.get('t1', False)
         password = request.POST.get('t2', False)
         status = "Error occured in account updation"
-        db_connection = pymysql.connect(host='127.0.0.1',port = 3306,user = 'root', password = '1234', database = 'Liver',charset='utf8')
+        db_connection = pymysql.connect(host='127.0.0.1',port = 3306,user = 'root', password = 'mypassword', database = 'liver',charset='utf8')
         db_cursor = db_connection.cursor()
         student_sql_query = "update account set username='"+username+"', password='"+password+"' where username='"+uname+"'"
         db_cursor.execute(student_sql_query)

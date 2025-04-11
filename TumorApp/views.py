@@ -2,6 +2,7 @@ from django.shortcuts import render
 from django.template import RequestContext
 from django.contrib import messages
 from django.http import HttpResponse
+from django.shortcuts import render, redirect
 import os
 import pickle
 import pymysql
@@ -204,6 +205,32 @@ def UpdateProfileAction(request):
         context= {'data': status}
         return render(request, 'UpdateProfile.html', context)
 
+
+def Register(request):
+    if request.method == 'GET':
+        return render(request, 'Register.html', {})
+
+def RegisterAction(request):
+    if request.method == 'POST':
+        username = request.POST.get('t1', False)
+        password = request.POST.get('t2', False)
+        confirm_password = request.POST.get('t3', False)
+
+        if password != confirm_password:
+            return render(request, 'Register.html', {'data': 'Passwords do not match'})
+
+        con = pymysql.connect(host='127.0.0.1', port=3306, user='root', password='mypassword', database='liver', charset='utf8')
+        with con:
+            cur = con.cursor()
+            cur.execute("SELECT * FROM account WHERE username=%s", (username,))
+            result = cur.fetchone()
+            
+            if result:
+                return render(request, 'Register.html', {'data': 'Username already exists'})
+            else:
+                cur.execute("INSERT INTO account(username, password) VALUES(%s, %s)", (username, password))
+                con.commit()
+                return redirect('index')  # ✅ Redirect to homepage (index)
 
 
     

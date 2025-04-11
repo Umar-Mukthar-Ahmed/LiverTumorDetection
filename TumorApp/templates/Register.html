@@ -1,0 +1,77 @@
+{% load static %}
+<html>
+
+<head>
+    <title>Register - Liver Tumor Detection</title>
+    <link href="{% static 'style.css' %}" rel="stylesheet" type="text/css" />
+</head>
+
+<body>
+    <div class="main">
+        <div class="main_resize">
+            <div class="header">
+                <div class="logo">
+                    <h1><span>Detection of Liver Tumors</span></h1>
+                </div>
+            </div>
+
+            <div class="content">
+                <div class="content_bg">
+                    <div class="menu_nav">
+                        <ul>
+                            <li><a href="{% url 'index' %}">
+                                    <font size="3" color="black">Home</font>
+                                </a></li>
+                            <li><a href="{% url 'AdminLogin' %}">
+                                    <font size="3" color="black">Admin Login Here</font>
+                                </a></li>
+                            <li><a href="{% url 'Register' %}">
+                                    <font size="3" color="black">Register</font>
+                                </a></li>
+                        </ul>
+                    </div>
+
+                    <h2 align="center">
+                        <font color="black">Register</font>
+                    </h2>
+
+                    <form method="POST" action="{% url 'RegisterAction' %}" align="center">
+                        {% csrf_token %}
+                        <table align="center" cellpadding="10">
+                            <tr>
+                                <td>
+                                    <font color="black">Username:</font>
+                                </td>
+                                <td><input type="text" name="t1" required /></td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <font color="black">Password:</font>
+                                </td>
+                                <td><input type="password" name="t2" required /></td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <font color="black">Confirm Password:</font>
+                                </td>
+                                <td><input type="password" name="t3" required /></td>
+                            </tr>
+                            <tr>
+                                <td colspan="2" align="center">
+                                    <input type="submit" value="Register" />
+                                </td>
+                            </tr>
+                        </table>
+                    </form>
+
+                    <p align="center">
+                        <font color="red">{{ data }}</font>
+                    </p>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

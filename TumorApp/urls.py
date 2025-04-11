@@ -9,5 +9,7 @@ urlpatterns = [path("", views.index, name="home"),
                path("UpdateProfileAction", views.UpdateProfileAction, name="UpdateProfileAction"),
                path("UpdateProfile.html", views.UpdateProfile, name="UpdateProfile"),
                path("DetectionAction", views.DetectionAction, name="DetectionAction"),
-               path("Detection.html", views.Detection, name="Detection"),	       
+               path("Detection.html", views.Detection, name="Detection"),
+               path("Register.html", views.Register, name="Register"),
+               path("RegisterAction", views.RegisterAction, name="RegisterAction")	       
 ]

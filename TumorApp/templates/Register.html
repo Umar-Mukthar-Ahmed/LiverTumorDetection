@@ -23,7 +23,7 @@
                                     <font size="3" color="black">Home</font>
                                 </a></li>
                             <li><a href="{% url 'AdminLogin' %}">
-                                    <font size="3" color="black">Admin Login Here</font>
+                                    <font size="3" color="black">Log In</font>
                                 </a></li>
                             <li><a href="{% url 'Register' %}">
                                     <font size="3" color="black">Register</font>
@@ -55,6 +55,12 @@
                                     <font color="black">Confirm Password:</font>
                                 </td>
                                 <td><input type="password" name="t3" required /></td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <font color="black">Registration Token:</font>
+                                </td>
+                                <td><input type="text" name="t4" required /></td>
                             </tr>
                             <tr>
                                 <td colspan="2" align="center">

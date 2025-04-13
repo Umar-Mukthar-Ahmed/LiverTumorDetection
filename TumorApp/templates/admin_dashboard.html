@@ -1,0 +1,143 @@
+{% load static %}
+<html>
+
+<head>
+    <title>Admin Dashboard - Detection of Liver Tumors</title>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <link href="{% static 'style.css' %}" rel="stylesheet" type="text/css" />
+
+    <style>
+        .admin-section {
+            font-family: 'Comic Sans MS', cursive;
+            margin-top: 20px;
+        }
+
+        h2,
+        h3 {
+            color: #c80203;
+        }
+
+        .admin-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        .admin-table th,
+        .admin-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        .admin-table th {
+            background-color: #f2f2f2;
+        }
+
+        form {
+            margin-top: 10px;
+            margin-bottom: 30px;
+        }
+
+        input[type="text"],
+        input[type="submit"] {
+            padding: 6px;
+            margin: 5px 0;
+        }
+
+        .section-block {
+            margin-bottom: 40px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="main">
+        <div class="main_resize">
+            <div class="header">
+                <div class="logo">
+                    <h1><span>Admin Dashboard</span></h1>
+                </div>
+            </div>
+
+            <div class="content">
+                <div class="content_bg admin-section">
+                    <div class="menu_nav">
+                        <ul>
+                            <li><a href="{% url 'UpdateProfileAction' %}">
+                                    <font size="3" color="black">Update Profile</font>
+                                </a></li>
+                            <li><a href="{% url 'Detection' %}">
+                                    <font size="3" color="black">Detect Tumor</font>
+                                </a></li>
+                            <li><a href="{% url 'index' %}">
+                                    <font size="3" color="black">Logout</font>
+                                </a></li>
+                        </ul>
+                    </div>
+
+                    <div class="hbg">
+                        <img src="{% static 'images/header_images.jpg' %}" width="915" height="386" alt="" />
+                    </div>
+
+                    <h2>Welcome, Admin</h2>
+                    <p>Use the controls below to manage users and tokens.</p>
+
+                    <div class="section-block">
+                        <h3>Total Users: {{ user_count }}</h3>
+
+                        <h3>User List</h3>
+                        <table class="admin-table">
+                            <tr>
+                                <th>Username</th>
+                            </tr>
+                            {% for user in usernames %}
+                            <tr>
+                                <td>{{ user.0 }}</td>
+                            </tr>
+                            {% endfor %}
+                        </table>
+                    </div>
+
+                    <div class="section-block">
+                        <h3>Generate New Token</h3>
+                        <form method="POST" action="{% url 'generate_token' %}">
+                            {% csrf_token %}
+                            <input type="submit" value="Generate Token" />
+                        </form>
+                    </div>
+
+                    <div class="section-block">
+                        <h3>All Tokens</h3>
+                        <table class="admin-table">
+                            <tr>
+                                <th>Token</th>
+                                <th>Created At</th>
+                                <th>Used</th>
+                            </tr>
+                            {% for token in tokens %}
+                            <tr>
+                                <td>{{ token.1 }}</td>
+                                <td>{{ token.2 }}</td>
+                                <td>{{ token.3 }}</td>
+                            </tr>
+                            {% endfor %}
+                        </table>
+                    </div>
+
+                    <div class="section-block">
+                        <h3>Delete User</h3>
+                        <form method="POST" action="{% url 'delete_user' %}">
+                            {% csrf_token %}
+                            <input type="text" name="username" placeholder="Username" required />
+                            <input type="submit" value="Delete" />
+                        </form>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

@@ -1,3 +1,4 @@
+import uuid
 from django.shortcuts import render
 from django.template import RequestContext
 from django.contrib import messages
@@ -8,6 +9,7 @@ import pickle
 import pymysql
 import os
 from django.core.files.storage import FileSystemStorage
+from datetime import datetime
 
 import cv2
 import numpy as np
@@ -166,18 +168,17 @@ def AdminLogin(request):
     
 def AdminLoginAction(request):
     if request.method == 'POST':
-        global uname
         username = request.POST.get('t1', False)
         password = request.POST.get('t2', False)
         index = 0
         con = pymysql.connect(host='127.0.0.1',port = 3306,user = 'root', password = 'mypassword', database = 'liver',charset='utf8')
         with con:    
             cur = con.cursor()
-            cur.execute("select * FROM account")
+            cur.execute("SELECT * FROM account")
             rows = cur.fetchall()
             for row in rows:
                 if row[0] == username and password == row[1]:
-                    uname = username
+                    request.session['username'] = username  # ✅ Save username in session
                     index = 1
                     break		
         if index == 1:
@@ -188,6 +189,7 @@ def AdminLoginAction(request):
             return render(request, 'AdminLogin.html', context)
 
 
+
 def UpdateProfileAction(request):
     if request.method == 'POST':
         global uname
@@ -196,8 +198,8 @@ def UpdateProfileAction(request):
         status = "Error occured in account updation"
         db_connection = pymysql.connect(host='127.0.0.1',port = 3306,user = 'root', password = 'mypassword', database = 'liver',charset='utf8')
         db_cursor = db_connection.cursor()
-        student_sql_query = "update account set username='"+username+"', password='"+password+"' where username='"+uname+"'"
-        db_cursor.execute(student_sql_query)
+        student_sql_query = "UPDATE account SET username=%s, password=%s WHERE username=%s"
+        db_cursor.execute(student_sql_query, (username, password, uname))
         db_connection.commit()
         print(db_cursor.rowcount, "Record Inserted")
         if db_cursor.rowcount == 1:
@@ -210,27 +212,147 @@ def Register(request):
     if request.method == 'GET':
         return render(request, 'Register.html', {})
 
+from django.utils import timezone
+from datetime import datetime
+import pymysql
+
+# def RegisterAction(request):
+#     if request.method == 'POST':
+#         username = request.POST.get('t1')
+#         password = request.POST.get('t2')
+#         confirm = request.POST.get('t3')
+#         token = request.POST.get('t4')
+
+#         if password != confirm:
+#             return render(request, 'Register.html', {'data': 'Passwords do not match'})
+
+#         con = pymysql.connect(host='127.0.0.1', port=3306, user='root', password='mypassword', database='liver', charset='utf8')
+#         with con:
+#             cur = con.cursor()
+
+#             # Check token validity
+#             cur.execute("SELECT * FROM tokens WHERE token=%s AND used_by IS NULL", (token,))
+#             result = cur.fetchone()
+
+#             if not result:
+#                 return render(request, 'Register.html', {'data': 'Invalid or already used token'})
+
+#             # Check expiry
+#             expires_at = result[3]
+#             if expires_at and datetime.now() > expires_at:
+#                 return render(request, 'Register.html', {'data': 'Token expired'})
+
+#             # Check if username already exists
+#             cur.execute("SELECT * FROM account WHERE username=%s", (username,))
+#             if cur.fetchone():
+#                 return render(request, 'Register.html', {'data': 'Username already exists'})
+
+#             # Register the user
+#             cur.execute("INSERT INTO account(username, password) VALUES(%s, %s)", (username, password))
+#             con.commit()
+
+#             # Mark the token as used
+#             cur.execute("UPDATE tokens SET used_by=%s, used_at=%s WHERE token=%s", (username, datetime.now(), token))
+#             con.commit()
+
+#             return redirect('index')  # Redirect to homepage
+
+
+
+
 def RegisterAction(request):
     if request.method == 'POST':
-        username = request.POST.get('t1', False)
-        password = request.POST.get('t2', False)
-        confirm_password = request.POST.get('t3', False)
+        username = request.POST.get('t1')
+        password = request.POST.get('t2')
+        confirm = request.POST.get('t3')
+        token = request.POST.get('t4')
 
-        if password != confirm_password:
+        if password != confirm:
             return render(request, 'Register.html', {'data': 'Passwords do not match'})
 
         con = pymysql.connect(host='127.0.0.1', port=3306, user='root', password='mypassword', database='liver', charset='utf8')
         with con:
             cur = con.cursor()
-            cur.execute("SELECT * FROM account WHERE username=%s", (username,))
+
+            # Check token validity
+            cur.execute("SELECT * FROM tokens WHERE token=%s", (token,))
             result = cur.fetchone()
-            
-            if result:
+
+            if not result:
+                return render(request, 'Register.html', {'data': 'Invalid or already used token'})
+
+            # Check if username already exists
+            cur.execute("SELECT * FROM account WHERE username=%s", (username,))
+            if cur.fetchone():
                 return render(request, 'Register.html', {'data': 'Username already exists'})
-            else:
-                cur.execute("INSERT INTO account(username, password) VALUES(%s, %s)", (username, password))
-                con.commit()
-                return redirect('index')  # ✅ Redirect to homepage (index)
+
+            # Register the user
+            cur.execute("INSERT INTO account(username, password) VALUES(%s, %s)", (username, password))
+            con.commit()
+
+            # Delete the token after successful registration
+            cur.execute("DELETE FROM tokens WHERE token=%s", (token,))
+            con.commit()
+
+            return redirect('index')
+
+
+
+def generate_token(request):
+    if request.method == 'POST':
+        token = str(uuid.uuid4())[:8]
+        timestamp = datetime.now()
+
+        con = pymysql.connect(host='127.0.0.1', user='root', password='mypassword', database='liver', charset='utf8')
+        cur = con.cursor()
+        cur.execute("INSERT INTO tokens (token, created_at) VALUES (%s, %s)", (token, timestamp))
+        con.commit()
+        return redirect('admin_dashboard')
+    
+
+def delete_user(request):
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        con = pymysql.connect(host='127.0.0.1', user='root', password='mypassword', database='liver', charset='utf8')
+        cur = con.cursor()
+        cur.execute("DELETE FROM account WHERE username = %s AND role = 'user'", (username,))
+        con.commit()
+        return redirect('admin_dashboard')
+
+
+def admin_dashboard(request):
+    if not request.session.get('username'):
+        return redirect('AdminLogin')
+
+    username = request.session['username']
+    
+    con = pymysql.connect(host='127.0.0.1', user='root', password='mypassword', database='liver', charset='utf8')
+    cur = con.cursor()
+    cur.execute("SELECT role FROM account WHERE username = %s", (username,))
+    role = cur.fetchone()
+
+    if not role or role[0] != 'admin':
+        return HttpResponse("Unauthorized Access", status=403)
+
+    # Fetch required dashboard info
+    cur.execute("SELECT COUNT(*) FROM account WHERE role='user'")
+    user_count = cur.fetchone()[0]
+
+    cur.execute("SELECT * FROM tokens")
+    tokens = cur.fetchall()
+    
+    # ✅ Fetch all usernames of users
+    cur.execute("SELECT username FROM account WHERE role = 'user'")
+    usernames = cur.fetchall()
+
+    return render(request, 'admin_dashboard.html', {
+        'user_count': user_count,
+        'tokens': tokens,
+        'usernames': usernames
+    })
 
 
     
+# def logout_view(request):
+#     logout(request)
+#     return redirect('home') 

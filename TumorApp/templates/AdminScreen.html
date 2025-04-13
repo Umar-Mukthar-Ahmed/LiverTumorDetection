@@ -28,6 +28,12 @@
               <li><a href="{% url 'index' %}">
                   <font size="3" color="black">Logout
                 </a></li>
+              <li>{% if request.session.username == "admin" %}
+              <li><a href="{% url 'admin_dashboard' %}">
+                  <font size="3" color="black">Admin Dashboard</font>
+                </a></li>
+              {% endif %}
+              </a></li>
             </ul>
           </div>
           <div class="hbg"><img src="{% static 'images/header_images.jpg' %}" width="915" height="286" alt="" /></div>

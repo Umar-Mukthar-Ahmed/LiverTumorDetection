@@ -26,7 +26,7 @@ from keras.callbacks import ModelCheckpoint
 import pickle
 
 main = tkinter.Tk()
-main.title("Pancreatic Tumor Detection using Image Processing") #designing main screen
+main.title("Liver Tumor Detection using Image Processing") #designing main screen
 main.geometry("1000x650")
 
 
@@ -268,7 +268,7 @@ def predict():
     plt.show()         
 
 font = ('times', 16, 'bold')
-title = Label(main, text='Pancreatic Tumor Detection using Image Processing', justify=LEFT)
+title = Label(main, text='liver Tumor Detection using Image Processing', justify=LEFT)
 title.config(bg='lavender blush', fg='DarkOrchid1')  
 title.config(font=font)           
 title.config(height=3, width=120)       
@@ -276,7 +276,7 @@ title.place(x=100,y=5)
 title.pack()
 
 font1 = ('times', 13, 'bold')
-uploadButton = Button(main, text="Upload Multi Atlas Pancreas Dataset", command=uploadDataset)
+uploadButton = Button(main, text="Upload Multi Atlas liver Dataset", command=uploadDataset)
 uploadButton.place(x=10,y=100)
 uploadButton.config(font=font1)
 

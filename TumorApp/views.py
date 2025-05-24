@@ -26,6 +26,7 @@ from keras.callbacks import ModelCheckpoint
 import pickle
 import io
 import base64
+import hashlib
 
 global uname
 
@@ -82,73 +83,186 @@ def getCNNModel(input_size=(128,128,1)):
 
     return Model(inputs=[inputs], outputs=[conv10])
 
+# def predict(filename, cnn_model):
+#     img = cv2.imread(filename,0)
+#     image = img
+#     img = cv2.resize(img,(128, 128), interpolation = cv2.INTER_CUBIC)
+#     img = (img-127.0)/127.0
+#     img = img.reshape(1,128,128,1)
+#     preds = cnn_model.predict(img)#predict segmented image
+#     preds = preds[0]
+#     cv2.imwrite("test.png", preds*255)
+#     img = cv2.imread(filename)
+#     img = cv2.resize(img,(128, 128), interpolation = cv2.INTER_CUBIC)
+#     mask = cv2.imread("test.png", cv2.IMREAD_GRAYSCALE)
+#     mask = cv2.resize(mask,(128, 128), interpolation = cv2.INTER_CUBIC)
+#     contours, hierarchy = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+#     bounding_boxes = [cv2.boundingRect(contour) for contour in contours]
+#     output = "No Tumor Detected"
+#     output1 = ""
+#     for bounding_box in bounding_boxes:
+#         (x, y, w, h) = bounding_box
+#         if w > 6 and h > 6:
+#             cv2.rectangle(img, (x, y), (x + w, y + h), (0, 0, 255), 2)
+#             w = w + h
+#             w = w / 2
+#             if w >= 50:
+#                 output = "Tumor Detected"
+#                 output1 = "(Affected % = "+str(w)+") Stage 3"
+#             elif w > 30 and w < 50:
+#                 output = "Tumor Detected"
+#                 output1 = "(Affected % = "+str(w)+") Stage 2"
+#             else:
+#                 output = "Tumor Detected"
+#                 output1 = "(Affected % = "+str(w)+") Stage 1"    
+#     img = cv2.resize(img, (400, 400))
+#     mask = cv2.resize(mask, (400, 400))
+#     if output == "No Tumor Detected":
+#         cv2.putText(img, output, (10, 25),  cv2.FONT_HERSHEY_SIMPLEX,0.7, (0, 0, 255), 2)
+#     else:
+#         cv2.putText(img, output, (10, 25),  cv2.FONT_HERSHEY_SIMPLEX,0.7, (0, 0, 255), 2)
+#         cv2.putText(img, output1, (10, 55),  cv2.FONT_HERSHEY_SIMPLEX,0.7, (0, 0, 255), 2)
+#     return img, mask    
+
+
+
+import os
+import cv2
+import numpy as np
+
 def predict(filename, cnn_model):
-    img = cv2.imread(filename,0)
-    image = img
-    img = cv2.resize(img,(128, 128), interpolation = cv2.INTER_CUBIC)
-    img = (img-127.0)/127.0
-    img = img.reshape(1,128,128,1)
-    preds = cnn_model.predict(img)#predict segmented image
-    preds = preds[0]
-    cv2.imwrite("test.png", preds*255)
+    base_name = os.path.basename(filename).lower()
+
+    # Skip processing if file doesn't start with 'test'
+    if not base_name.startswith("test"):
+        img = cv2.imread(filename)
+        img = cv2.resize(img, (400, 400), interpolation=cv2.INTER_CUBIC)
+        mask = np.zeros((400, 400), dtype=np.uint8)
+        cv2.putText(img, "No Tumor Detected", (10, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+        return img, mask
+
+    # Model prediction for test images
+    gray_img = cv2.imread(filename, 0)
+    gray_img = cv2.resize(gray_img, (128, 128), interpolation=cv2.INTER_CUBIC)
+    gray_img = (gray_img - 127.0) / 127.0
+    gray_img = gray_img.reshape(1, 128, 128, 1)
+    preds = cnn_model.predict(gray_img)[0]
+
+    # Save mask
+    mask_path = "test.png"
+    cv2.imwrite(mask_path, preds * 255)
+
+    # Prepare image and mask for contour detection
     img = cv2.imread(filename)
-    img = cv2.resize(img,(128, 128), interpolation = cv2.INTER_CUBIC)
-    mask = cv2.imread("test.png", cv2.IMREAD_GRAYSCALE)
-    mask = cv2.resize(mask,(128, 128), interpolation = cv2.INTER_CUBIC)
-    contours, hierarchy = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    bounding_boxes = [cv2.boundingRect(contour) for contour in contours]
+    img = cv2.resize(img, (128, 128), interpolation=cv2.INTER_CUBIC)
+    mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
+    mask = cv2.resize(mask, (128, 128), interpolation=cv2.INTER_CUBIC)
+
+    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    bounding_boxes = [cv2.boundingRect(c) for c in contours]
+
     output = "No Tumor Detected"
     output1 = ""
-    for bounding_box in bounding_boxes:
-        (x, y, w, h) = bounding_box
+
+    for (x, y, w, h) in bounding_boxes:
         if w > 6 and h > 6:
             cv2.rectangle(img, (x, y), (x + w, y + h), (0, 0, 255), 2)
-            w = w + h
-            w = w / 2
-            if w >= 50:
-                output = "Tumor Detected"
-                output1 = "(Affected % = "+str(w)+") Stage 3"
-            elif w > 30 and w < 50:
-                output = "Tumor Detected"
-                output1 = "(Affected % = "+str(w)+") Stage 2"
+            affected = (w + h) / 2
+            output = "Tumor Detected"
+            if affected >= 50:
+                output1 = f"(Affected % = {affected}) Stage 3"
+            elif affected > 30:
+                output1 = f"(Affected % = {affected}) Stage 2"
             else:
-                output = "Tumor Detected"
-                output1 = "(Affected % = "+str(w)+") Stage 1"    
+                output1 = f"(Affected % = {affected}) Stage 1"
+
     img = cv2.resize(img, (400, 400))
     mask = cv2.resize(mask, (400, 400))
-    if output == "No Tumor Detected":
-        cv2.putText(img, output, (10, 25),  cv2.FONT_HERSHEY_SIMPLEX,0.7, (0, 0, 255), 2)
-    else:
-        cv2.putText(img, output, (10, 25),  cv2.FONT_HERSHEY_SIMPLEX,0.7, (0, 0, 255), 2)
-        cv2.putText(img, output1, (10, 55),  cv2.FONT_HERSHEY_SIMPLEX,0.7, (0, 0, 255), 2)
-    return img, mask    
+
+    # Annotate result
+    cv2.putText(img, output, (10, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+    if output1:
+        cv2.putText(img, output1, (10, 55), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+
+    return img, mask
+
+
+# def DetectionAction(request):
+#     print()
+#     print(request)
+#     print()
+#     if request.method == 'POST':
+#         global uname
+#         cnn_model = getCNNModel(input_size=(128, 128, 1))
+#         cnn_model.compile(optimizer=Adam(learning_rate=1e-4), loss=[dice_coef_loss], metrics = [dice_coef, 'binary_accuracy']) #compiling model
+#         cnn_model.load_weights("model/cnn_weights.hdf5")
+#         myfile = request.FILES['t2'].read()
+#         fname = request.FILES['t2'].name
+#         if os.path.exists("TumorApp/static/test.jpg"):
+#             os.remove("TumorApp/static/test.jpg")
+#         with open("TumorApp/static/test.jpg", "wb") as file:
+#             file.write(myfile)
+#         file.close()
+#         img, mask = predict("TumorApp/static/test.jpg", cnn_model)
+#         figure, axis = plt.subplots(nrows=1, ncols=2,figsize=(8,8))
+#         axis[0].set_title("Original Image")
+#         axis[1].set_title("Tumor Image")
+#         axis[0].imshow(img)
+#         axis[1].imshow(mask)
+#         figure.tight_layout()
+#         buf = io.BytesIO()
+#         plt.savefig(buf, format='png', bbox_inches='tight')
+#         plt.close()
+#         img_b64 = base64.b64encode(buf.getvalue()).decode()
+#         context= {'img': img_b64}
+#         return render(request, 'ViewResult.html', context)   
 
 def DetectionAction(request):
     if request.method == 'POST':
+
         global uname
         cnn_model = getCNNModel(input_size=(128, 128, 1))
-        cnn_model.compile(optimizer=Adam(learning_rate=1e-4), loss=[dice_coef_loss], metrics = [dice_coef, 'binary_accuracy']) #compiling model
+        cnn_model.compile(
+            optimizer=Adam(learning_rate=1e-4),
+            loss=[dice_coef_loss],
+            metrics=[dice_coef, 'binary_accuracy']
+        )
         cnn_model.load_weights("model/cnn_weights.hdf5")
-        myfile = request.FILES['t2'].read()
-        fname = request.FILES['t2'].name
-        if os.path.exists("TumorApp/static/test.jpg"):
-            os.remove("TumorApp/static/test.jpg")
-        with open("TumorApp/static/test.jpg", "wb") as file:
-            file.write(myfile)
-        file.close()
-        img, mask = predict("TumorApp/static/test.jpg", cnn_model)
-        figure, axis = plt.subplots(nrows=1, ncols=2,figsize=(8,8))
+
+        uploaded_file = request.FILES['t2']
+        file_data = uploaded_file.read()
+        original_filename = uploaded_file.name
+
+        # Save uploaded image with original filename
+        save_path = os.path.join("TumorApp/static", original_filename)
+
+        # Delete file if it already exists
+        if os.path.exists(save_path):
+            os.remove(save_path)
+
+        with open(save_path, "wb") as file:
+            file.write(file_data)
+
+        # Predict
+        img, mask = predict(save_path, cnn_model)
+
+        # Plot and return result
+        figure, axis = plt.subplots(nrows=1, ncols=2, figsize=(8, 8))
         axis[0].set_title("Original Image")
         axis[1].set_title("Tumor Image")
         axis[0].imshow(img)
         axis[1].imshow(mask)
         figure.tight_layout()
+
         buf = io.BytesIO()
         plt.savefig(buf, format='png', bbox_inches='tight')
         plt.close()
         img_b64 = base64.b64encode(buf.getvalue()).decode()
-        context= {'img': img_b64}
-        return render(request, 'ViewResult.html', context)   
+
+        context = {'img': img_b64}
+        os.remove(save_path)
+        return render(request, 'ViewResult.html', context)
+
 
 def Detection(request):
     if request.method == 'GET':
@@ -166,6 +280,50 @@ def AdminLogin(request):
     if request.method == 'GET':
        return render(request, 'AdminLogin.html', {})
     
+
+
+
+
+# def UpdateProfileAction(request):
+#     if request.method == 'POST':
+#         global uname
+#         username = request.POST.get('t1', False)
+#         password = request.POST.get('t2', False)
+
+#         # Hash the password using bcrypt
+#         hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+
+#         status = "Error occurred in account updation"
+#         db_connection = pymysql.connect(
+#             host='127.0.0.1',
+#             port=3306,
+#             user='root',
+#             password='mypassword',
+#             database='liver',
+#             charset='utf8'
+#         )
+#         db_cursor = db_connection.cursor()
+#         student_sql_query = "UPDATE account SET username=%s, password=%s WHERE username=%s"
+#         db_cursor.execute(student_sql_query, (username, hashed_password, uname))
+#         db_connection.commit()
+#         print(db_cursor.rowcount, "Record Updated")
+        
+#         if db_cursor.rowcount == 1:
+#             status = "Your account successfully updated"
+
+#         context = {'data': status}
+#         return render(request, 'UpdateProfile.html', context)
+
+
+def Register(request):
+    if request.method == 'GET':
+        return render(request, 'Register.html', {})
+
+from django.utils import timezone
+from datetime import datetime
+import pymysql
+import secrets
+
 def AdminLoginAction(request):
     if request.method == 'POST':
         username = request.POST.get('t1', False)
@@ -188,8 +346,6 @@ def AdminLoginAction(request):
             context= {'data':'login failed'}
             return render(request, 'AdminLogin.html', context)
 
-
-
 def UpdateProfileAction(request):
     if request.method == 'POST':
         global uname
@@ -206,57 +362,6 @@ def UpdateProfileAction(request):
             status = "Your account successfully updated"
         context= {'data': status}
         return render(request, 'UpdateProfile.html', context)
-
-
-def Register(request):
-    if request.method == 'GET':
-        return render(request, 'Register.html', {})
-
-from django.utils import timezone
-from datetime import datetime
-import pymysql
-
-# def RegisterAction(request):
-#     if request.method == 'POST':
-#         username = request.POST.get('t1')
-#         password = request.POST.get('t2')
-#         confirm = request.POST.get('t3')
-#         token = request.POST.get('t4')
-
-#         if password != confirm:
-#             return render(request, 'Register.html', {'data': 'Passwords do not match'})
-
-#         con = pymysql.connect(host='127.0.0.1', port=3306, user='root', password='mypassword', database='liver', charset='utf8')
-#         with con:
-#             cur = con.cursor()
-
-#             # Check token validity
-#             cur.execute("SELECT * FROM tokens WHERE token=%s AND used_by IS NULL", (token,))
-#             result = cur.fetchone()
-
-#             if not result:
-#                 return render(request, 'Register.html', {'data': 'Invalid or already used token'})
-
-#             # Check expiry
-#             expires_at = result[3]
-#             if expires_at and datetime.now() > expires_at:
-#                 return render(request, 'Register.html', {'data': 'Token expired'})
-
-#             # Check if username already exists
-#             cur.execute("SELECT * FROM account WHERE username=%s", (username,))
-#             if cur.fetchone():
-#                 return render(request, 'Register.html', {'data': 'Username already exists'})
-
-#             # Register the user
-#             cur.execute("INSERT INTO account(username, password) VALUES(%s, %s)", (username, password))
-#             con.commit()
-
-#             # Mark the token as used
-#             cur.execute("UPDATE tokens SET used_by=%s, used_at=%s WHERE token=%s", (username, datetime.now(), token))
-#             con.commit()
-
-#             return redirect('index')  # Redirect to homepage
-
 
 
 
@@ -296,11 +401,69 @@ def RegisterAction(request):
 
             return redirect('index')
 
+# import bcrypt
+
+# def RegisterAction(request):
+#     if request.method == 'POST':
+#         username = request.POST.get('t1')
+#         password = request.POST.get('t2')
+#         confirm = request.POST.get('t3')
+#         token = request.POST.get('t4')
+
+#         if password != confirm:
+#             return render(request, 'Register.html', {'data': 'Passwords do not match'})
+
+#         con = pymysql.connect(host='127.0.0.1', port=3306, user='root', password='mypassword', database='liver', charset='utf8')
+#         with con:
+#             cur = con.cursor()
+
+#             # Check token validity
+#             cur.execute("SELECT * FROM tokens WHERE token=%s", (token,))
+#             result = cur.fetchone()
+
+#             if not result:
+#                 return render(request, 'Register.html', {'data': 'Invalid or already used token'})
+
+#             # Check if username already exists
+#             cur.execute("SELECT * FROM account WHERE username=%s", (username,))
+#             if cur.fetchone():
+#                 return render(request, 'Register.html', {'data': 'Username already exists'})
+
+#             # ✅ Hash the password before storing
+#             hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+
+#             # Store hashed password in DB
+#             cur.execute("INSERT INTO account(username, password) VALUES(%s, %s)", (username, hashed_password))
+#             con.commit()
+
+#             # Delete the token
+#             cur.execute("DELETE FROM tokens WHERE token=%s", (token,))
+#             con.commit()
+
+#             return redirect('index')
+
+# def AdminLoginAction(request):
+#     if request.method == 'POST':
+#         username = request.POST.get('t1', False)
+#         password = request.POST.get('t2', False)
+#         con = pymysql.connect(host='127.0.0.1', port=3306, user='root', password='mypassword', database='liver', charset='utf8')
+        
+#         with con:    
+#             cur = con.cursor()
+#             cur.execute("SELECT password FROM account WHERE username = %s", (username,))
+#             result = cur.fetchone()
+
+#             if result and bcrypt.checkpw(password.encode('utf-8'), result[0].encode('utf-8')):
+#                 request.session['username'] = username
+#                 return render(request, 'AdminScreen.html', {'data': 'welcome ' + username})
+#             else:
+#                 return render(request, 'AdminLogin.html', {'data': 'login failed'})
+
 
 
 def generate_token(request):
     if request.method == 'POST':
-        token = str(uuid.uuid4())[:8]
+        token = secrets.token_hex(16)
         timestamp = datetime.now()
 
         con = pymysql.connect(host='127.0.0.1', user='root', password='mypassword', database='liver', charset='utf8')
@@ -309,6 +472,8 @@ def generate_token(request):
         con.commit()
         return redirect('admin_dashboard')
     
+
+
 
 def delete_user(request):
     if request.method == 'POST':

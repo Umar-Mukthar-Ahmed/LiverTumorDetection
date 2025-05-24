@@ -1,4 +1,4 @@
-{% load static %}
+<!-- {% load static %}
 <html>
 <head>
 <title>Detection of Liver Tumors</title>
@@ -64,4 +64,105 @@
 				
 					
 	</body>
+</html>
+
+-->
+
+{% load static %}
+<html>
+
+<head>
+	<title>Detection of Liver Tumors</title>
+	<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+	<link href="{% static 'style.css' %}" rel="stylesheet" type="text/css" />
+	<script language="javascript">
+		function validate(formObj) {
+			if (formObj.t1.value.length == 0) {
+				alert("Please Enter Patient name");
+				formObj.t1.focus();
+				return false;
+			}
+			if (formObj.t2.value.length == 0) {
+				alert("Please upload patient image");
+				formObj.t2.focus();
+				return false;
+			}
+
+			// Check if uploaded file is PNG
+			var fileInput = formObj.t2;
+			var filePath = fileInput.value;
+			var allowedExtensions = /(\.png)$/i;
+
+			if (!allowedExtensions.exec(filePath)) {
+				alert('Invalid file type. Please upload a image.');
+				fileInput.value = '';
+				fileInput.focus();
+				return false;
+			}
+
+			return true;
+		}
+	</script>
+</head>
+
+<body>
+	<div class="main">
+		<div class="main_resize">
+			<div class="header">
+				<div class="logo">
+					<h1><span>Detection of Liver Tumors</span><small></small></h1>
+				</div>
+			</div>
+			<div class="content">
+				<div class="content_bg">
+					<div class="menu_nav">
+						<ul>
+							<li><a href="{% url 'UpdateProfile' %}">
+									<font size="3" color="black">Update Profile</font>
+								</a></li>
+							<li><a href="{% url 'Detection' %}">
+									<font size="3" color="black">Detect Tumor</font>
+								</a></li>
+							<li><a href="{% url 'index' %}">
+									<font size="3" color="black">Logout</font>
+								</a></li>
+						</ul>
+					</div>
+					<div class="hbg">
+						<img src="{% static 'images/header_images.jpg' %}" width="915" height="286" alt="" />
+					</div>
+					<center>
+						<form name="f1" method="post" action={% url 'DetectionAction' %} enctype="multipart/form-data"
+							onsubmit="return validate(this);">
+							{% csrf_token %}<br />
+							<h2><b>Tumor Detection Screen</b></h2>
+							<font size="" color="red">
+								<center>{{ data }}</center>
+							</font>
+							<table align="center" width="30%">
+								<tr>
+									<td>
+										<font size='' color=black>Patient&nbsp;Name</font>
+									</td>
+									<td><input type="text" name="t1" style="font-family: Comic Sans MS" size="25"></td>
+								</tr>
+								<tr>
+									<td>
+										<font size='' color=black>Browse&nbsp;Image</font>
+									</td>
+									<td><input name="t2" type="file" size="25"></td>
+								</tr>
+								<tr>
+									<td></td>
+									<td><input type="submit" value="Submit"></td>
+								</tr>
+							</table>
+						</form>
+					</center>
+				</div>
+			</div>
+		</div>
+	</div>
+</body>
+
 </html>

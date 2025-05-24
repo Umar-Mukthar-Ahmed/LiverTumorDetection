@@ -100,18 +100,18 @@
                     </div>
 
                     <div class="section-block">
-                        <h3>Generate New Token</h3>
+                        <h3>Generate New Secret-Key</h3>
                         <form method="POST" action="{% url 'generate_token' %}">
                             {% csrf_token %}
-                            <input type="submit" value="Generate Token" />
+                            <input type="submit" value="Generate Secret-Key" />
                         </form>
                     </div>
 
                     <div class="section-block">
-                        <h3>All Tokens</h3>
+                        <h3>All Secret-Keys</h3>
                         <table class="admin-table">
                             <tr>
-                                <th>Token</th>
+                                <th>Secret-Key</th>
                                 <th>Created At</th>
                                 <th>Used</th>
                             </tr>

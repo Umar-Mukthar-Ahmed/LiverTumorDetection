@@ -1,0 +1,19 @@
+-- Create the database
+CREATE DATABASE liver;
+
+-- Switch to the liver database
+USE liver;
+
+-- Create the account table
+CREATE TABLE account (
+    username VARCHAR(30) NOT NULL PRIMARY KEY,
+    password VARCHAR(30),
+    role VARCHAR(10) DEFAULT 'user'
+);
+
+-- Create the tokens table
+CREATE TABLE tokens (
+    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    token VARCHAR(255),
+    created_at DATETIME
+);
